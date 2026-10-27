@@ -1,0 +1,337 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "private_outputs": true,
+      "provenance": [],
+      "gpuType": "T4",
+      "cell_execution_strategy": "setup",
+      "mount_file_id": "1eG91a1EpVlIc7JmT-NftdBpCwN1ogKO1",
+      "authorship_tag": "ABX9TyPpL5/oeR7EjvuEExJk3JfS",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Sundaramprince/-Web-Development-/blob/main/Unemployment_indiapynb\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "c65752d7"
+      },
+      "source": [
+        "!pip install streamlit"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6b5d21e8"
+      },
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "import pandas as pd\n",
+        "import plotly.express as px\n",
+        "import seaborn as sns\n",
+        "import streamlit as st"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "af694688"
+      },
+      "source": [
+        "# Load the unemployment dataset and perform initial exploration\n",
+        "df = pd.read_csv('/content/Unemployment in India.csv')\n",
+        "\n",
+        "# Strip whitespaces from column names for easier access\n",
+        "df.columns = df.columns.str.strip()\n",
+        "\n",
+        "# Display data info and first 5 rows\n",
+        "print(\"Dataset Information:\")\n",
+        "df.info()\n",
+        "\n",
+        "print(\"\\nFirst 5 Rows of the Dataset:\")\n",
+        "display(df.head())"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "c8182c4c"
+      },
+      "source": [
+        "# Drop completely empty rows and clean spaces from categorical values\n",
+        "df_clean = df.dropna(how='all').copy()\n",
+        "for col in ['Region', 'Frequency', 'Area']:\n",
+        "    if col in df_clean.columns:\n",
+        "        df_clean[col] = df_clean[col].astype(str).str.strip()\n",
+        "\n",
+        "# Standardize the Date column\n",
+        "df_clean['Date'] = pd.to_datetime(df_clean['Date'].str.strip(), format='%d-%m-%Y', errors='coerce')\n",
+        "\n",
+        "# Add helper columns for Year and Month\n",
+        "df_clean['Year'] = df_clean['Date'].dt.year\n",
+        "df_clean['Month_Name'] = df_clean['Date'].dt.strftime('%B')\n",
+        "\n",
+        "# Drop remaining NaN values if any rows are still incomplete\n",
+        "df_clean = df_clean.dropna()\n",
+        "\n",
+        "print(\"Cleaned Dataset Information:\")\n",
+        "df_clean.info()\n",
+        "print(\"\\nSummary Statistics for Numeric Columns:\")\n",
+        "display(df_clean.describe())"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "6538aaf8"
+      },
+      "source": [
+        "import seaborn as sns\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "# Set figure style\n",
+        "sns.set_theme(style=\"whitegrid\")\n",
+        "fig, axes = plt.subplots(3, 1, figsize=(14, 18))\n",
+        "\n",
+        "# 1. Timeline Trend of Unemployment Rate\n",
+        "sns.lineplot(data=df_clean, x='Date', y='Estimated Unemployment Rate (%)', hue='Area', ax=axes[0], errorbar=None, marker='o')\n",
+        "axes[0].set_title('Unemployment Rate Trend over Time (Rural vs Urban)', fontsize=14, fontweight='bold')\n",
+        "axes[0].set_xlabel('Date')\n",
+        "axes[0].set_ylabel('Estimated Unemployment Rate (%)')\n",
+        "\n",
+        "# 2. Regional Analysis (Average Unemployment by State)\n",
+        "region_order = df_clean.groupby('Region')['Estimated Unemployment Rate (%)'].mean().sort_values(ascending=False).index\n",
+        "sns.barplot(data=df_clean, x='Estimated Unemployment Rate (%)', y='Region', ax=axes[1], order=region_order, hue='Region', palette='viridis', legend=False, errorbar=None)\n",
+        "axes[1].set_title('Average Unemployment Rate by Region / State', fontsize=14, fontweight='bold')\n",
+        "axes[1].set_xlabel('Average Estimated Unemployment Rate (%)')\n",
+        "axes[1].set_ylabel('Region')\n",
+        "\n",
+        "# 3. Distribution Comparison (Urban vs Rural Boxplot)\n",
+        "sns.boxplot(data=df_clean, x='Area', y='Estimated Unemployment Rate (%)', ax=axes[2], hue='Area', palette='Set2', legend=False)\n",
+        "axes[2].set_title('Distribution of Unemployment Rate: Urban vs Rural', fontsize=14, fontweight='bold')\n",
+        "axes[2].set_xlabel('Area')\n",
+        "axes[2].set_ylabel('Estimated Unemployment Rate (%)')\n",
+        "\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "514ce479"
+      },
+      "source": [
+        "%%writefile app.py\n",
+        "import streamlit as st\n",
+        "import pandas as pd\n",
+        "import plotly.express as px\n",
+        "\n",
+        "# Configure page style\n",
+        "st.set_page_config(page_title=\"Unemployment Analysis App\", layout=\"wide\")\n",
+        "\n",
+        "# Header\n",
+        "st.title(\"📈 Unemployment Analysis Dashboard (India)\")\n",
+        "st.markdown(\"Explore the unemployment rate trends, employment figures, and labour participation across various regions and areas in India.\")\n",
+        "\n",
+        "# Load dataset and cache it\n",
+        "@st.cache_data\n",
+        "def load_data():\n",
+        "    df = pd.read_csv('/content/Unemployment in India.csv')\n",
+        "    df.columns = df.columns.str.strip()\n",
+        "    df_clean = df.dropna(how='all').copy()\n",
+        "    for col in ['Region', 'Frequency', 'Area']:\n",
+        "        if col in df_clean.columns:\n",
+        "            df_clean[col] = df_clean[col].astype(str).str.strip()\n",
+        "    df_clean['Date'] = pd.to_datetime(df_clean['Date'].str.strip(), format='%d-%m-%Y', errors='coerce')\n",
+        "    df_clean['Year'] = df_clean['Date'].dt.year\n",
+        "    df_clean['Month_Name'] = df_clean['Date'].dt.strftime('%B')\n",
+        "    return df_clean.dropna()\n",
+        "\n",
+        "data = load_data()\n",
+        "\n",
+        "# Sidebar Filters\n",
+        "st.sidebar.header(\"Filter Options\")\n",
+        "all_regions = sorted(data['Region'].unique())\n",
+        "selected_region = st.sidebar.multiselect(\"Select Region / State\", options=all_regions, default=all_regions[:5])\n",
+        "selected_area = st.sidebar.multiselect(\"Select Area Type\", options=data['Area'].unique(), default=list(data['Area'].unique()))\n",
+        "\n",
+        "# Apply filters\n",
+        "filtered_data = data[(data['Region'].isin(selected_region)) & (data['Area'].isin(selected_area))]\n",
+        "\n",
+        "# Key Metrics columns\n",
+        "col1, col2, col3 = st.columns(3)\n",
+        "with col1:\n",
+        "    avg_unemployment = filtered_data['Estimated Unemployment Rate (%)'].mean()\n",
+        "    st.metric(label=\"Avg Unemployment Rate\", value=f\"{avg_unemployment:.2f}%\" if not pd.isna(avg_unemployment) else \"N/A\")\n",
+        "with col2:\n",
+        "    avg_employed = filtered_data['Estimated Employed'].mean()\n",
+        "    st.metric(label=\"Avg Employed Count\", value=f\"{avg_employed:,.0f}\" if not pd.isna(avg_employed) else \"N/A\")\n",
+        "with col3:\n",
+        "    avg_participation = filtered_data['Estimated Labour Participation Rate (%)'].mean()\n",
+        "    st.metric(label=\"Avg Labour Participation\", value=f\"{avg_participation:.2f}%\" if not pd.isna(avg_participation) else \"N/A\")\n",
+        "\n",
+        "# Visualization 1: Line Chart over Time\n",
+        "st.subheader(\"Unemployment Trends Over Time\")\n",
+        "if not filtered_data.empty:\n",
+        "    fig_line = px.line(\n",
+        "        filtered_data,\n",
+        "        x='Date',\n",
+        "        y='Estimated Unemployment Rate (%)',\n",
+        "        color='Region',\n",
+        "        line_dash='Area',\n",
+        "        title=\"Unemployment Rate Timeline\"\n",
+        "    )\n",
+        "    st.plotly_chart(fig_line, use_container_width=True)\n",
+        "else:\n",
+        "    st.warning(\"No data available for the selected filters.\")\n",
+        "\n",
+        "# Visualization 2: Regional bar comparison\n",
+        "st.subheader(\"Unemployment Comparison by Region\")\n",
+        "if not filtered_data.empty:\n",
+        "    fig_bar = px.bar(\n",
+        "        filtered_data.groupby('Region')['Estimated Unemployment Rate (%)'].mean().reset_index().sort_values(by='Estimated Unemployment Rate (%)', ascending=False),\n",
+        "        x='Estimated Unemployment Rate (%)',\n",
+        "        y='Region',\n",
+        "        color='Estimated Unemployment Rate (%)',\n",
+        "        orientation='h',\n",
+        "        title=\"Average Unemployment Rate by State/Region\"\n",
+        "    )\n",
+        "    st.plotly_chart(fig_bar, use_container_width=True)\n",
+        "\n",
+        "# Display Raw Data Table\n",
+        "if st.checkbox(\"Show Raw Filtered Data\"):\n",
+        "    st.subheader(\"Raw Data\")\n",
+        "    st.dataframe(filtered_data)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "RPU6zBE0YQyJ"
+      },
+      "outputs": [],
+      "source": [
+        "!pip install streamlit\n",
+        "\n",
+        "import matplotlib.pyplot as plt\n",
+        "import pandas as pd\n",
+        "import plotly.express as px\n",
+        "import seaborn as sns\n",
+        "import streamlit as st"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "cccac308"
+      },
+      "source": [
+        "# 1. Install localtunnel\n",
+        "!npm install -g localtunnel\n",
+        "\n",
+        "# 2. Run Streamlit in the background using the absolute sys.executable path\n",
+        "import sys\n",
+        "import subprocess\n",
+        "import time\n",
+        "\n",
+        "print(\"Starting Streamlit server...\")\n",
+        "with open(\"streamlit_server.log\", \"w\") as log_file:\n",
+        "    subprocess.Popen([sys.executable, \"-m\", \"streamlit\", \"run\", \"app.py\", \"--server.port\", \"8501\"], stdout=log_file, stderr=log_file)\n",
+        "\n",
+        "# Wait a few seconds for Streamlit to initialize\n",
+        "time.sleep(5)\n",
+        "\n",
+        "# 3. Retrieve your public IP address for localtunnel verification\n",
+        "print(\"\\n--- YOUR LOCALTUNNEL PASSWORD (IP Address) ---\")\n",
+        "!curl -s ipv4.icanhazip.com\n",
+        "print(\"---------------------------------------------\\n\")\n",
+        "\n",
+        "# 4. Expose the port to the public web\n",
+        "!npx localtunnel --port 8501"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "b2fb423f"
+      },
+      "source": [
+        "import socket\n",
+        "import subprocess\n",
+        "\n",
+        "# 1. Check for active streamlit processes in running system processes\n",
+        "print(\"=== Streamlit Process Verification ===\")\n",
+        "try:\n",
+        "    ps_output = subprocess.check_output([\"pgrep\", \"-fl\", \"streamlit\"]).decode('utf-8')\n",
+        "    print(\"Active Streamlit processes:\")\n",
+        "    print(ps_output)\n",
+        "except subprocess.CalledProcessError:\n",
+        "    print(\"No active 'streamlit' processes found running in the background.\")\n",
+        "\n",
+        "# 2. Check if port 8501 is open and listening\n",
+        "print(\"\\n=== Port 8501 Connection Check ===\")\n",
+        "s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n",
+        "s.settimeout(2)\n",
+        "result = s.connect_ex(('127.0.0.1', 8501))\n",
+        "if result == 0:\n",
+        "    print(\"Port 8501 is OPEN and successfully listening for connections!\")\n",
+        "else:\n",
+        "    print(\"Port 8501 is CLOSED. The Streamlit server may not have started properly.\")\n",
+        "s.close()"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "yXgWzESeb5Q4"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "MWOAzIn1b2xB"
+      }
+    }
+  ]
+}
